@@ -1,0 +1,176 @@
+<div class="auth-loading" *ngIf="!authReady"><span class="loading-mark">✳</span><p>Opening your finance space…</p></div>
+
+<section class="auth-screen" *ngIf="authReady && !currentUser">
+  <div class="auth-decoration auth-decoration-one"></div>
+  <div class="auth-decoration auth-decoration-two"></div>
+  <div class="auth-card">
+    <a class="brand auth-brand" href="#" (click)="$event.preventDefault()">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 21.5 13.5 15l4.5 4.5L26 11.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 11.5h6v6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="brand-name">{{title}}</span>
+    </a>
+    <div class="auth-eyebrow">YOUR MONEY, YOUR SPACE</div>
+    <h1>{{authMode === 'login' ? 'Welcome back.' : 'Make room for your goals.'}}</h1>
+    <p class="auth-intro">{{authMode === 'login' ? 'Sign in to pick up where you left off.' : 'Create an account to start tracking your finances.'}}</p>
+
+    <form (ngSubmit)="submitAuth()">
+      <label *ngIf="authMode === 'register'">Your name<input name="authName" [(ngModel)]="authForm.name" autocomplete="name" minlength="2" maxlength="80" required></label>
+      <label>Email address<input type="email" name="authEmail" [(ngModel)]="authForm.email" autocomplete="email" required></label>
+      <label>Password<input type="password" name="authPassword" [(ngModel)]="authForm.password" [attr.autocomplete]="authMode === 'login' ? 'current-password' : 'new-password'" minlength="8" maxlength="128" required><small *ngIf="authMode === 'register'" class="field-hint">Use at least 8 characters.</small></label>
+      <p class="form-error" *ngIf="authError" role="alert">{{authError}}</p>
+      <button class="primary auth-submit" type="submit" [disabled]="authBusy">{{authBusy ? 'Please wait…' : (authMode === 'login' ? 'Sign in' : 'Create account')}} <span *ngIf="!authBusy" aria-hidden="true">→</span></button>
+    </form>
+
+    <p class="auth-switch">{{authMode === 'login' ? 'New to Pocketwise?' : 'Already have an account?'}}
+      <button type="button" (click)="setAuthMode(authMode === 'login' ? 'register' : 'login')">{{authMode === 'login' ? 'Create account' : 'Sign in'}}</button>
+    </p>
+    <div class="auth-footnote"><span class="sync-dot"></span>Your financial data stays private to your account.</div>
+  </div>
+</section>
+
+<div class="app-shell" *ngIf="authReady && currentUser">
+  <aside class="sidebar">
+    <a class="brand" href="#" (click)="$event.preventDefault(); setTab('dashboard')">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none"><path d="M7 21.5 13.5 15l4.5 4.5L26 11.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 11.5h6v6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="brand-name">{{ title }}</span>
+    </a>
+
+    <div class="nav-label">YOUR WORKSPACE</div>
+    <nav class="nav" aria-label="Main navigation">
+      <button [class.active]="tab==='dashboard'" (click)="setTab('dashboard')"><span class="nav-icon">⌂</span>Overview</button>
+      <button [class.active]="tab==='income'" (click)="setTab('income')"><span class="nav-icon">↗</span>Income</button>
+      <button [class.active]="tab==='expenses'" (click)="setTab('expenses')"><span class="nav-icon">↘</span>Expenses</button>
+      <button [class.active]="tab==='budgets'" (click)="setTab('budgets')"><span class="nav-icon">◎</span>Budgets &amp; goals</button>
+      <button [class.active]="tab==='analytics'" (click)="setTab('analytics')"><span class="nav-icon">▥</span>Analytics</button>
+      <button [class.active]="tab==='reports'" (click)="setTab('reports')"><span class="nav-icon">▤</span>Reports</button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="sync-card">
+        <span class="sync-dot"></span>
+        <div><b>Everything in sync</b><small>Connected to your account</small></div>
+      </div>
+      <div class="profile">
+        <div class="avatar">{{currentUser.name.charAt(0).toUpperCase()}}</div>
+        <div class="profile-name"><b>{{currentUser.name}}</b><small>{{currentUser.email}}</small></div>
+        <button class="logout-button" (click)="logout()" aria-label="Log out" title="Log out">↗</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="workspace">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">YOUR PERSONAL FINANCE SPACE</div>
+        <h1>{{ tab === 'dashboard' ? 'Your money, at a glance.' : (tab | titlecase) }}</h1>
+        <p>A clearer view of where you are — and where you’re headed.</p>
+      </div>
+      <div class="header-actions">
+        <div class="date-chip"><span aria-hidden="true">◷</span>{{ today | date:'EEE, MMM d' }}</div>
+        <button class="logout-header" (click)="logout()">Log out</button>
+        <button class="primary new-transaction" (click)="setTab('expenses')"><span aria-hidden="true">＋</span>New transaction</button>
+      </div>
+    </header>
+
+    <div class="error-banner" *ngIf="dataError" role="alert"><span>{{dataError}}</span><button (click)="loadAll()">Retry</button></div>
+
+    <main>
+      <section *ngIf="tab==='dashboard'">
+        <div class="hero-card">
+          <div class="hero-copy">
+            <div class="hero-kicker"><span></span> A FRESH LOOK AT YOUR FINANCES</div>
+            <h2>Small steps today.<br><em>More freedom tomorrow.</em></h2>
+            <p>Keep your goals close and your spending in perspective. You’ve got this.</p>
+            <button class="hero-link" (click)="setTab('analytics')">Explore your insights <span aria-hidden="true">↗</span></button>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="orbit orbit-one"></div>
+            <div class="orbit orbit-two"></div>
+            <div class="orbit orbit-three"></div>
+            <div class="balance-note"><span>YOUR CURRENT BALANCE</span><b>{{money(summary.balance)}}</b><small>Income minus expenses</small></div>
+            <span class="spark spark-one">✳</span><span class="spark spark-two">✦</span>
+          </div>
+        </div>
+
+        <div class="section-heading">
+          <div><span class="eyebrow">THE BIG PICTURE</span><h2>Your snapshot</h2></div>
+          <span class="period-pill"><span></span> All time</span>
+        </div>
+        <div class="cards">
+          <div class="card income">
+            <div class="card-top"><span class="card-icon">↗</span><span class="card-caption">MONEY IN</span></div>
+            <b>{{money(summary.totalIncome)}}</b><small>Total income</small>
+          </div>
+          <div class="card expense">
+            <div class="card-top"><span class="card-icon">↘</span><span class="card-caption">MONEY OUT</span></div>
+            <b>{{money(summary.totalExpense)}}</b><small>Total expenses</small>
+          </div>
+          <div class="card balance">
+            <div class="card-top"><span class="card-icon">◈</span><span class="card-caption">NET BALANCE</span></div>
+            <b>{{money(summary.balance)}}</b><small>Income after expenses</small>
+          </div>
+          <div class="card goals">
+            <div class="card-top"><span class="card-icon">◎</span><span class="card-caption">IN PROGRESS</span></div>
+            <b>{{goals.length}} <span class="goal-word">{{goals.length === 1 ? 'goal' : 'goals'}}</span></b><small>Active savings goals</small>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="panel chart-panel">
+            <div class="panel-heading"><div><span class="eyebrow">CASH FLOW</span><h2>Income &amp; expenses</h2></div><span class="panel-mark">01</span></div>
+            <div class="chart"><canvas #monthlyChart></canvas></div>
+          </div>
+          <div class="panel chart-panel">
+            <div class="panel-heading"><div><span class="eyebrow">SPENDING MIX</span><h2>By category</h2></div><span class="panel-mark">02</span></div>
+            <div class="chart"><canvas #categoryChart></canvas></div>
+          </div>
+        </div>
+
+        <div class="panel transactions-panel">
+          <div class="panel-heading"><div><span class="eyebrow">THE LATEST</span><h2>Recent transactions</h2></div><button class="text-button" (click)="setTab('expenses')">Manage activity <span aria-hidden="true">→</span></button></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Date</th><th>Type</th><th>Category / source</th><th class="amount-cell">Amount</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let x of income.slice(0,5)"><td>{{x.date|date}}</td><td><span class="type-badge type-income">Income</span></td><td>{{x.source}}</td><td class="amount-cell positive">+{{money(x.amount)}}</td></tr>
+              <tr *ngFor="let x of expenses.slice(0,5)"><td>{{x.date|date}}</td><td><span class="type-badge type-expense">Expense</span></td><td>{{x.category}}</td><td class="amount-cell negative">-{{money(x.amount)}}</td></tr>
+            </tbody>
+          </table></div>
+          <div class="empty-state" *ngIf="income.length + expenses.length === 0"><span>✳</span><b>Your story starts here.</b><p>Add an income or expense to see your activity.</p></div>
+        </div>
+      </section>
+
+      <section *ngIf="tab==='income'" class="two-col">
+        <div class="panel form-panel"><div class="panel-heading"><div><span class="eyebrow">MONEY IN</span><h2>Add income</h2></div></div><form (ngSubmit)="addIncome()"><label>Source<input name="source" [(ngModel)]="incomeForm.source" placeholder="e.g. Salary, freelance" required></label><label>Amount<input type="number" name="amount" [(ngModel)]="incomeForm.amount" min="0.01" step="0.01" required></label><label>Date<input type="date" name="date" [(ngModel)]="incomeForm.date" required></label><label>Description<textarea name="description" [(ngModel)]="incomeForm.description" placeholder="Add a note (optional)"></textarea></label><p class="form-error" *ngIf="saveError" role="alert">{{saveError}}</p><p class="form-success" *ngIf="saveSuccess" role="status">{{saveSuccess}}</p><button class="primary" [disabled]="saving==='income'">{{saving==='income' ? 'Saving…' : 'Add income'}} <span *ngIf="saving!=='income'" aria-hidden="true">→</span></button></form></div>
+        <div class="panel"><div class="panel-heading"><div><span class="eyebrow">YOUR RECORDS</span><h2>Income entries</h2></div></div><div class="table-scroll"><table><thead><tr><th>Date</th><th>Source</th><th>Amount</th><th></th></tr></thead><tbody><tr *ngFor="let x of income"><td>{{x.date|date}}</td><td>{{x.source}}</td><td class="positive">{{money(x.amount)}}</td><td><button class="danger" (click)="removeIncome(x._id!)">Delete</button></td></tr></tbody></table></div></div>
+      </section>
+
+      <section *ngIf="tab==='expenses'" class="two-col">
+        <div class="panel form-panel"><div class="panel-heading"><div><span class="eyebrow">MONEY OUT</span><h2>Add expense</h2></div></div><form (ngSubmit)="addExpense()"><label>Category<input name="category" [(ngModel)]="expenseForm.category" placeholder="Food, travel, bills..." required></label><label>Amount<input type="number" name="amount" [(ngModel)]="expenseForm.amount" min="0.01" step="0.01" required></label><label>Date<input type="date" name="date" [(ngModel)]="expenseForm.date" required></label><label>Description<textarea name="description" [(ngModel)]="expenseForm.description" placeholder="Add a note (optional)"></textarea></label><p class="form-error" *ngIf="saveError" role="alert">{{saveError}}</p><p class="form-success" *ngIf="saveSuccess" role="status">{{saveSuccess}}</p><button class="primary" [disabled]="saving==='expense'">{{saving==='expense' ? 'Saving…' : 'Add expense'}} <span *ngIf="saving!=='expense'" aria-hidden="true">→</span></button></form></div>
+        <div class="panel"><div class="panel-heading"><div><span class="eyebrow">YOUR RECORDS</span><h2>Expense entries</h2></div></div><div class="table-scroll"><table><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th></th></tr></thead><tbody><tr *ngFor="let x of expenses"><td>{{x.date|date}}</td><td>{{x.category}}</td><td class="negative">{{money(x.amount)}}</td><td><button class="danger" (click)="removeExpense(x._id!)">Delete</button></td></tr></tbody></table></div></div>
+      </section>
+
+      <section *ngIf="tab==='budgets'" class="two-col">
+        <div>
+          <div class="panel form-panel"><div class="panel-heading"><div><span class="eyebrow">SPEND WITH INTENTION</span><h2>Create a budget</h2></div></div><form (ngSubmit)="addBudget()"><label>Category<input name="category" [(ngModel)]="budgetForm.category" required></label><label>Monthly limit<input type="number" name="limit" [(ngModel)]="budgetForm.limit" min="0.01" step="0.01" required></label><label>Month<input type="month" name="month" [(ngModel)]="budgetForm.month" required></label><p class="form-error" *ngIf="saveError" role="alert">{{saveError}}</p><p class="form-success" *ngIf="saveSuccess" role="status">{{saveSuccess}}</p><button class="primary" [disabled]="saving==='budget'">{{saving==='budget' ? 'Saving…' : 'Save budget'}} <span *ngIf="saving!=='budget'" aria-hidden="true">→</span></button></form></div>
+          <div class="panel form-panel"><div class="panel-heading"><div><span class="eyebrow">MAKE IT HAPPEN</span><h2>Set a savings goal</h2></div></div><form (ngSubmit)="addGoal()"><label>Goal name<input name="name" [(ngModel)]="goalForm.name" required></label><label>Target amount<input type="number" name="targetAmount" [(ngModel)]="goalForm.targetAmount" min="0.01" step="0.01" required></label><label>Current amount<input type="number" name="currentAmount" [(ngModel)]="goalForm.currentAmount" min="0" step="0.01"></label><label>Deadline<input type="date" name="deadline" [(ngModel)]="goalForm.deadline"></label><p class="form-error" *ngIf="saveError" role="alert">{{saveError}}</p><p class="form-success" *ngIf="saveSuccess" role="status">{{saveSuccess}}</p><button class="primary" [disabled]="saving==='goal'">{{saving==='goal' ? 'Saving…' : 'Add goal'}} <span *ngIf="saving!=='goal'" aria-hidden="true">→</span></button></form></div>
+        </div>
+        <div>
+          <div class="panel"><div class="panel-heading"><div><span class="eyebrow">MONTHLY PLAN</span><h2>Your budgets</h2></div></div><div class="list" *ngFor="let b of budgets"><div><b>{{b.category}}</b><small>{{b.month}} · Limit {{money(b.limit)}}</small></div><button class="danger" (click)="removeBudget(b._id!)">Delete</button></div><div class="empty-state compact" *ngIf="budgets.length === 0"><p>No budgets yet. Create one to give your spending a little direction.</p></div></div>
+          <div class="panel"><div class="panel-heading"><div><span class="eyebrow">ONE STEP AT A TIME</span><h2>Savings goals</h2></div></div><div class="goal" *ngFor="let g of goals"><div class="goal-head"><b>{{g.name}}</b><span>{{goalPercent(g)}}%</span></div><div class="progress"><span [style.width.%]="goalPercent(g)"></span></div><small>{{money(g.currentAmount)}} of {{money(g.targetAmount)}} · Deadline {{g.deadline|date}}</small><button class="danger small" (click)="removeGoal(g._id!)">Delete</button></div><div class="empty-state compact" *ngIf="goals.length === 0"><p>Your next big thing starts with a goal. Add one to begin.</p></div></div>
+        </div>
+      </section>
+
+      <section *ngIf="tab==='analytics'">
+        <div class="section-heading"><div><span class="eyebrow">SEE THE PATTERNS</span><h2>Your financial pulse</h2></div></div>
+        <div class="cards analytics-cards"><div class="card income"><div class="card-top"><span class="card-icon">↗</span><span class="card-caption">MONEY IN</span></div><b>{{money(summary.totalIncome)}}</b><small>Total income</small></div><div class="card expense"><div class="card-top"><span class="card-icon">↘</span><span class="card-caption">MONEY OUT</span></div><b>{{money(summary.totalExpense)}}</b><small>Total expenses</small></div><div class="card balance"><div class="card-top"><span class="card-icon">◈</span><span class="card-caption">NET BALANCE</span></div><b>{{money(summary.balance)}}</b><small>Income after expenses</small></div></div>
+        <div class="grid"><div class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">CASH FLOW</span><h2>Monthly analysis</h2></div></div><div class="chart"><canvas #monthlyChart></canvas></div></div><div class="panel chart-panel"><div class="panel-heading"><div><span class="eyebrow">SPENDING MIX</span><h2>Category analysis</h2></div></div><div class="chart"><canvas #categoryChart></canvas></div></div></div>
+      </section>
+
+      <section *ngIf="tab==='reports'">
+        <div class="panel report-panel"><div class="panel-heading"><div><span class="eyebrow">YOUR MONEY, SUMMED UP</span><h2>Financial report</h2></div><span class="report-symbol">↗</span></div><p class="report-intro">A simple snapshot, generated from your current finance data.</p><div class="report"><p><span>Total income</span><b>{{money(summary.totalIncome)}}</b></p><p><span>Total expenses</span><b>{{money(summary.totalExpense)}}</b></p><p><span>Net savings</span><b>{{money(summary.balance)}}</b></p><p><span>Transactions recorded</span><b>{{income.length + expenses.length}}</b></p></div><button class="primary" onclick="window.print()">Print / save report <span aria-hidden="true">↗</span></button></div>
+      </section>
+    </main>
+    <footer><span class="footer-mark">✳</span> A little more mindful, one day at a time.</footer>
+  </div>
+</div>

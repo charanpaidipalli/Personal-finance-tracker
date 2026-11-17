@@ -1,0 +1,253 @@
+{
+  "info": {
+    "_postman_id": "f1b3d226-0aa1-4ad0-9da7-5063ea1a20c7",
+    "name": "Pocketwise Finance Tracker API",
+    "description": "Local API collection for the Personal Finance Tracker requirements. Set the collection variables name, email, and password before running. Run Register once for a new account, then Login and the remaining requests. Postman keeps the HTTP-only session cookie automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:5100" },
+    { "key": "name", "value": "" },
+    { "key": "email", "value": "" },
+    { "key": "password", "value": "" },
+    { "key": "incomeId", "value": "" },
+    { "key": "expenseId", "value": "" },
+    { "key": "budgetId", "value": "" },
+    { "key": "goalId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register account (run once per email)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('name') || !pm.collectionVariables.get('email') || !pm.collectionVariables.get('password')) {",
+                  "  throw new Error('Set the name, email, and password collection variables before registering.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Account created or already exists', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('email') || !pm.collectionVariables.get('password')) {",
+                  "  throw new Error('Set the email and password collection variables before signing in.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login succeeds', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Login returns a user', function () { pm.expect(pm.response.json().user.email).to.eql(pm.collectionVariables.get('email')); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Current session",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Session is authenticated', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().user).to.be.an('object'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me" }
+        }
+      ]
+    },
+    {
+      "name": "Income entries",
+      "item": [
+        {
+          "name": "Create income",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Income created', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('incomeId', pm.response.json()._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"source\": \"Postman salary entry\",\n  \"amount\": 15000,\n  \"date\": \"2026-11-17\",\n  \"description\": \"Income entry test\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/income"
+          }
+        },
+        {
+          "name": "List income",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Income list loads', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/income" }
+        },
+        {
+          "name": "Delete created income",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Income deleted', function () { pm.response.to.have.status(200); });"] } }],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/income/{{incomeId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Expense entries",
+      "item": [
+        {
+          "name": "Create expense",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Expense created', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('expenseId', pm.response.json()._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"category\": \"Postman groceries\",\n  \"amount\": 500,\n  \"date\": \"2026-11-17\",\n  \"description\": \"Expense entry test\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/expenses"
+          }
+        },
+        {
+          "name": "List expenses",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Expense list loads', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/expenses" }
+        },
+        {
+          "name": "Delete created expense",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Expense deleted', function () { pm.response.to.have.status(200); });"] } }],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/expenses/{{expenseId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Budgets",
+      "item": [
+        {
+          "name": "Create budget",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Budget created', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('budgetId', pm.response.json()._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"category\": \"Postman groceries\",\n  \"limit\": 5000,\n  \"month\": \"2026-11\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/budgets"
+          }
+        },
+        {
+          "name": "List budgets",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Budgets load', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/budgets" }
+        },
+        {
+          "name": "Delete created budget",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Budget deleted', function () { pm.response.to.have.status(200); });"] } }],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/budgets/{{budgetId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Savings goals",
+      "item": [
+        {
+          "name": "Create goal",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Goal created', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('goalId', pm.response.json()._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman emergency fund\",\n  \"targetAmount\": 50000,\n  \"currentAmount\": 10000,\n  \"deadline\": \"2027-06-30\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/goals"
+          }
+        },
+        {
+          "name": "List goals",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Goals load', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/goals" }
+        },
+        {
+          "name": "Update created goal",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Goal updated', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().currentAmount).to.eql(15000); });"] } }],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentAmount\": 15000\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/goals/{{goalId}}"
+          }
+        },
+        {
+          "name": "Delete created goal",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Goal deleted', function () { pm.response.to.have.status(200); });"] } }],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/goals/{{goalId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Analytics and reports",
+      "item": [
+        {
+          "name": "Income and expense summary",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Summary has income, expense, and balance', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.have.all.keys('totalIncome', 'totalExpense', 'balance'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/analytics/summary" }
+        },
+        {
+          "name": "Monthly analytics",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Monthly analytics returns an array', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/analytics/monthly" }
+        },
+        {
+          "name": "Expense categories",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Category analytics returns an array', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/analytics/category" }
+        },
+        {
+          "name": "Financial report",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Report contains totals and entries', function () { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.have.all.keys('generatedAt', 'totalIncome', 'totalExpense', 'balance', 'income', 'expense'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reports" }
+        }
+      ]
+    },
+    {
+      "name": "Health and sign out",
+      "item": [
+        {
+          "name": "API health",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('API is healthy', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('ok'); });"] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/health" }
+        },
+        {
+          "name": "Logout (run last)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Logout succeeds', function () { pm.response.to.have.status(200); });"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/auth/logout" }
+        }
+      ]
+    }
+  ]
+}
